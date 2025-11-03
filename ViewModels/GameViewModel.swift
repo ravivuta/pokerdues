@@ -23,11 +23,17 @@ class GameViewModel: ObservableObject {
     }
     
     func addPlayer(name: String, net: Double) {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }
         
-        let player = Player(name: trimmedName, net: net)
-        players.append(player)
+        if let index = players.firstIndex(where: { normalizedName($0.name) == normalizedName(trimmedName) }) {
+            players[index].net += net
+        } else {
+            let player = Player(name: trimmedName, net: net)
+            players.append(player)
+        }
+        
+        mergePlayersByNameInPlace()
         saveData()
     }
     
@@ -38,8 +44,9 @@ class GameViewModel: ObservableObject {
     
     func updatePlayer(_ player: Player, name: String, net: Double) {
         if let index = players.firstIndex(where: { $0.id == player.id }) {
-            players[index].name = name.trimmingCharacters(in: .whitespaces)
+            players[index].name = name.trimmingCharacters(in: .whitespacesAndNewlines)
             players[index].net = net
+            mergePlayersByNameInPlace()
             saveData()
         }
     }
@@ -50,9 +57,17 @@ class GameViewModel: ObservableObject {
         errorMessage = nil
         
         // Filter out blank players
-        let validPlayers = players.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
+        let validPlayers = players
+            .map { player -> Player in
+                var normalizedPlayer = player
+                normalizedPlayer.name = normalizedPlayer.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                return normalizedPlayer
+            }
+            .filter { !$0.name.isEmpty }
         
-        guard !validPlayers.isEmpty else {
+        let aggregatedPlayers = aggregatePlayersByName(validPlayers)
+        
+        guard !aggregatedPlayers.isEmpty else {
             errorMessage = "Please add at least one player"
             showError = true
             return
@@ -60,7 +75,7 @@ class GameViewModel: ObservableObject {
         
         // Check for "Grand Total" - in original code, it stops processing there
         // We'll just validate the sum instead
-        let grandTotal = validPlayers.reduce(0.0) { $0 + $1.net }
+        let grandTotal = aggregatedPlayers.reduce(0.0) { $0 + $1.net }
         
         if grandTotal < -1.0 || grandTotal > 1.0 {
             errorMessage = "ERROR: Grand Total must be zero, check your data: \(String(format: "%.2f", grandTotal))"
@@ -69,7 +84,7 @@ class GameViewModel: ObservableObject {
         }
         
         // Calculate settlements
-        guard let calculatedTransactions = SettlementCalculator.calculate(players: validPlayers) else {
+        guard let calculatedTransactions = SettlementCalculator.calculate(players: aggregatedPlayers) else {
             errorMessage = "ERROR: Grand Total must be zero, check your data"
             showError = true
             return
@@ -78,13 +93,14 @@ class GameViewModel: ObservableObject {
         transactions = calculatedTransactions
         
         // Add to overall stats (matching original behavior: [date, playerName, netAmount])
-        for player in validPlayers {
+        for player in aggregatedPlayers {
             overallStats.append(PlayerStat(
                 playerName: player.name,
                 netAmount: player.net
             ))
         }
         
+        players = aggregatedPlayers
         saveData()
     }
     
@@ -117,7 +133,7 @@ class GameViewModel: ObservableObject {
         // Load players
         if let data = UserDefaults.standard.data(forKey: playersKey),
            let decoded = try? JSONDecoder().decode([Player].self, from: data) {
-            players = decoded
+            players = aggregatePlayersByName(decoded)
         }
         
         // Load overall stats
@@ -125,6 +141,36 @@ class GameViewModel: ObservableObject {
            let decoded = try? JSONDecoder().decode([PlayerStat].self, from: data) {
             overallStats = decoded
         }
+    }
+
+    private func normalizedName(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+    
+    private func aggregatePlayersByName(_ players: [Player]) -> [Player] {
+        var aggregated: [String: Player] = [:]
+        var orderedKeys: [String] = []
+        
+        for player in players {
+            let trimmedName = player.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = trimmedName.lowercased()
+            
+            if var existing = aggregated[key] {
+                existing.net += player.net
+                aggregated[key] = existing
+            } else {
+                var newPlayer = player
+                newPlayer.name = trimmedName
+                aggregated[key] = newPlayer
+                orderedKeys.append(key)
+            }
+        }
+        
+        return orderedKeys.compactMap { aggregated[$0] }
+    }
+    
+    private func mergePlayersByNameInPlace() {
+        players = aggregatePlayersByName(players)
     }
 }
 
