@@ -12,19 +12,28 @@ struct AddPlayerView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var playerName = ""
-    @State private var playerNet: String = ""
+    @State private var playerBuyIn: String = ""
+    @State private var playerFinalBalance: String = ""
     
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Player Information")) {
                     TextField("Player Name", text: $playerName)
-                    TextField("Net Amount", text: $playerNet)
+                    TextField("Buy In", text: $playerBuyIn)
                         .keyboardType(.decimalPad)
+                    TextField("Final Balance", text: $playerFinalBalance)
+                        .keyboardType(.decimalPad)
+                    HStack {
+                        Text("Net")
+                        Spacer()
+                        Text(String(format: "%.2f", netAmount))
+                            .foregroundColor(netAmount >= 0 ? .green : .red)
+                    }
                 }
                 
                 Section(header: Text("Note")) {
-                    Text("Positive = owed money\nNegative = owes money")
+                    Text("Net is calculated automatically: Buy In minus Final Balance")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -39,15 +48,19 @@ struct AddPlayerView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Add") {
-                        if let net = Double(playerNet) {
-                            viewModel.addPlayer(name: playerName, net: net)
+                        if let buyIn = Double(playerBuyIn), let finalBalance = Double(playerFinalBalance) {
+                            viewModel.addPlayer(name: playerName, buyIn: buyIn, finalBalance: finalBalance)
                             dismiss()
                         }
                     }
-                    .disabled(playerName.isEmpty || Double(playerNet) == nil)
+                    .disabled(playerName.isEmpty || Double(playerBuyIn) == nil || Double(playerFinalBalance) == nil)
                 }
             }
         }
+    }
+
+    private var netAmount: Double {
+        (Double(playerBuyIn) ?? 0) - (Double(playerFinalBalance) ?? 0)
     }
 }
 

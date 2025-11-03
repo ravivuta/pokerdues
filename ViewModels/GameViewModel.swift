@@ -22,11 +22,11 @@ class GameViewModel: ObservableObject {
         loadData()
     }
     
-    func addPlayer(name: String, net: Double) {
+    func addPlayer(name: String, buyIn: Double, finalBalance: Double) {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else { return }
         
-        let player = Player(name: trimmedName, net: net)
+        let player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance)
         players.append(player)
         saveData()
     }
@@ -36,10 +36,11 @@ class GameViewModel: ObservableObject {
         saveData()
     }
     
-    func updatePlayer(_ player: Player, name: String, net: Double) {
+    func updatePlayer(_ player: Player, name: String, buyIn: Double, finalBalance: Double) {
         if let index = players.firstIndex(where: { $0.id == player.id }) {
             players[index].name = name.trimmingCharacters(in: .whitespaces)
-            players[index].net = net
+            players[index].buyIn = buyIn
+            players[index].finalBalance = finalBalance
             saveData()
         }
     }

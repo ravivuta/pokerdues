@@ -10,8 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = GameViewModel()
     @State private var showingAddPlayer = false
-    @State private var newPlayerName = ""
-    @State private var newPlayerNet: String = ""
     @State private var showingStats = false
     
     var body: some View {
@@ -159,7 +157,8 @@ struct PlayerRow: View {
     @ObservedObject var viewModel: GameViewModel
     @State private var isEditing = false
     @State private var editedName: String = ""
-    @State private var editedNet: String = ""
+    @State private var editedBuyIn: String = ""
+    @State private var editedFinalBalance: String = ""
     
     var body: some View {
         HStack {
@@ -167,14 +166,18 @@ struct PlayerRow: View {
                 TextField("Name", text: $editedName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 
-                TextField("Net", text: $editedNet)
+                TextField("Buy In", text: $editedBuyIn)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .keyboardType(.decimalPad)
+                    .frame(width: 100)
+                TextField("Final", text: $editedFinalBalance)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.decimalPad)
                     .frame(width: 100)
                 
                 Button("Save") {
-                    if let net = Double(editedNet) {
-                        viewModel.updatePlayer(player, name: editedName, net: net)
+                    if let buyIn = Double(editedBuyIn), let finalBalance = Double(editedFinalBalance) {
+                        viewModel.updatePlayer(player, name: editedName, buyIn: buyIn, finalBalance: finalBalance)
                         isEditing = false
                     }
                 }
@@ -188,16 +191,33 @@ struct PlayerRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(player.name)
                         .font(.headline)
-                    Text(String(format: "%.2f", player.net))
-                        .font(.subheadline)
-                        .foregroundColor(player.net >= 0 ? .green : .red)
+                    HStack {
+                        Text("Buy In:")
+                        Spacer()
+                        Text(String(format: "%.2f", player.buyIn))
+                    }
+                    .font(.subheadline)
+                    HStack {
+                        Text("Final Balance:")
+                        Spacer()
+                        Text(String(format: "%.2f", player.finalBalance))
+                    }
+                    .font(.subheadline)
+                    HStack {
+                        Text("Net:")
+                        Spacer()
+                        Text(String(format: "%.2f", player.net))
+                            .foregroundColor(player.net >= 0 ? .green : .red)
+                    }
+                    .font(.subheadline)
                 }
                 
                 Spacer()
                 
                 Button(action: {
                     editedName = player.name
-                    editedNet = String(format: "%.2f", player.net)
+                    editedBuyIn = String(format: "%.2f", player.buyIn)
+                    editedFinalBalance = String(format: "%.2f", player.finalBalance)
                     isEditing = true
                 }) {
                     Image(systemName: "pencil")
