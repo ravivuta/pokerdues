@@ -22,13 +22,20 @@ class GameViewModel: ObservableObject {
         loadData()
     }
     
-    func addPlayer(name: String, net: Double) {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        guard !trimmedName.isEmpty else { return }
+    @discardableResult
+    func addPlayer(name: String, buyIn: Double, finalBalance: Double) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return false }
         
-        let player = Player(name: trimmedName, net: net)
+        guard !players.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) else {
+            presentError("Player names must be unique.")
+            return false
+        }
+        
+        let player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance)
         players.append(player)
         saveData()
+        return true
     }
     
     func removePlayer(at offsets: IndexSet) {
@@ -36,12 +43,29 @@ class GameViewModel: ObservableObject {
         saveData()
     }
     
-    func updatePlayer(_ player: Player, name: String, net: Double) {
-        if let index = players.firstIndex(where: { $0.id == player.id }) {
-            players[index].name = name.trimmingCharacters(in: .whitespaces)
-            players[index].net = net
-            saveData()
+    @discardableResult
+    func updatePlayer(_ player: Player, name: String, buyIn: Double, finalBalance: Double) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return false }
+        
+        let duplicateExists = players.contains {
+            $0.id != player.id && $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
         }
+        
+        guard !duplicateExists else {
+            presentError("Player names must be unique.")
+            return false
+        }
+        
+        if let index = players.firstIndex(where: { $0.id == player.id }) {
+            players[index].name = trimmedName
+            players[index].buyIn = buyIn
+            players[index].finalBalance = finalBalance
+            saveData()
+            return true
+        }
+
+        return false
     }
     
     func calculate() {
@@ -86,6 +110,11 @@ class GameViewModel: ObservableObject {
         }
         
         saveData()
+    }
+    
+    private func presentError(_ message: String) {
+        errorMessage = message
+        showError = true
     }
     
     func clearGameData() {

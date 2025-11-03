@@ -12,15 +12,33 @@ struct AddPlayerView: View {
     @Environment(\.dismiss) var dismiss
     
     @State private var playerName = ""
-    @State private var playerNet: String = ""
+    @State private var buyIn: String = ""
+    @State private var finalBalance: String = ""
+    
+    private var calculatedNet: Double? {
+        guard let buyInValue = Double(buyIn), let finalBalanceValue = Double(finalBalance) else {
+            return nil
+        }
+        return finalBalanceValue - buyInValue
+    }
     
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Player Information")) {
                     TextField("Player Name", text: $playerName)
-                    TextField("Net Amount", text: $playerNet)
+                    TextField("Buy-In", text: $buyIn)
                         .keyboardType(.decimalPad)
+                    TextField("Final Balance", text: $finalBalance)
+                        .keyboardType(.decimalPad)
+                    if let net = calculatedNet {
+                        HStack {
+                            Text("Net")
+                            Spacer()
+                            Text(String(format: "%.2f", net))
+                                .foregroundColor(net >= 0 ? .green : .red)
+                        }
+                    }
                 }
                 
                 Section(header: Text("Note")) {
@@ -39,12 +57,14 @@ struct AddPlayerView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Add") {
-                        if let net = Double(playerNet) {
-                            viewModel.addPlayer(name: playerName, net: net)
+                        guard let buyInValue = Double(buyIn),
+                              let finalBalanceValue = Double(finalBalance) else { return }
+                        let didAdd = viewModel.addPlayer(name: playerName, buyIn: buyInValue, finalBalance: finalBalanceValue)
+                        if didAdd {
                             dismiss()
                         }
                     }
-                    .disabled(playerName.isEmpty || Double(playerNet) == nil)
+                    .disabled(playerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || Double(buyIn) == nil || Double(finalBalance) == nil)
                 }
             }
         }

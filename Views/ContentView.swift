@@ -10,8 +10,6 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var viewModel = GameViewModel()
     @State private var showingAddPlayer = false
-    @State private var newPlayerName = ""
-    @State private var newPlayerNet: String = ""
     @State private var showingStats = false
     
     var body: some View {
@@ -159,53 +157,81 @@ struct PlayerRow: View {
     @ObservedObject var viewModel: GameViewModel
     @State private var isEditing = false
     @State private var editedName: String = ""
-    @State private var editedNet: String = ""
+    @State private var editedBuyIn: String = ""
+    @State private var editedFinalBalance: String = ""
     
     var body: some View {
-        HStack {
+        VStack(alignment: .leading, spacing: 8) {
             if isEditing {
                 TextField("Name", text: $editedName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                
-                TextField("Net", text: $editedNet)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .keyboardType(.decimalPad)
-                    .frame(width: 100)
-                
-                Button("Save") {
-                    if let net = Double(editedNet) {
-                        viewModel.updatePlayer(player, name: editedName, net: net)
+                HStack {
+                    TextField("Buy-In", text: $editedBuyIn)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.decimalPad)
+                    TextField("Final Balance", text: $editedFinalBalance)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.decimalPad)
+                }
+                if let buyInValue = Double(editedBuyIn), let finalBalanceValue = Double(editedFinalBalance) {
+                    Text("Net: \(String(format: "%.2f", finalBalanceValue - buyInValue))")
+                        .font(.caption)
+                        .foregroundColor(finalBalanceValue - buyInValue >= 0 ? .green : .red)
+                }
+                HStack {
+                    Button("Save") {
+                        guard let buyInValue = Double(editedBuyIn),
+                              let finalBalanceValue = Double(editedFinalBalance) else { return }
+                        let didUpdate = viewModel.updatePlayer(player, name: editedName, buyIn: buyInValue, finalBalance: finalBalanceValue)
+                        if didUpdate {
+                            isEditing = false
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    
+                    Button("Cancel") {
+                        resetEdits()
                         isEditing = false
                     }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.borderedProminent)
-                
-                Button("Cancel") {
-                    isEditing = false
-                }
-                .buttonStyle(.bordered)
             } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(player.name)
-                        .font(.headline)
-                    Text(String(format: "%.2f", player.net))
-                        .font(.subheadline)
-                        .foregroundColor(player.net >= 0 ? .green : .red)
-                }
-                
-                Spacer()
-                
-                Button(action: {
-                    editedName = player.name
-                    editedNet = String(format: "%.2f", player.net)
-                    isEditing = true
-                }) {
-                    Image(systemName: "pencil")
-                        .foregroundColor(.blue)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(player.name)
+                            .font(.headline)
+                        Text("Buy-In: \(String(format: "%.2f", player.buyIn))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text("Final: \(String(format: "%.2f", player.finalBalance))")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(String(format: "Net: %.2f", player.net))
+                            .font(.subheadline)
+                            .foregroundColor(player.net >= 0 ? .green : .red)
+                    }
+                    Spacer()
+                    Button(action: {
+                        populateEdits()
+                        isEditing = true
+                    }) {
+                        Image(systemName: "pencil")
+                            .foregroundColor(.blue)
+                    }
                 }
             }
         }
         .padding(.vertical, 4)
+    }
+    
+    private func populateEdits() {
+        editedName = player.name
+        editedBuyIn = String(format: "%.2f", player.buyIn)
+        editedFinalBalance = String(format: "%.2f", player.finalBalance)
+    }
+    
+    private func resetEdits() {
+        populateEdits()
     }
 }
 
