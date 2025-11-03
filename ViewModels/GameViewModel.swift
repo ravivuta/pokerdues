@@ -28,19 +28,19 @@ class GameViewModel: ObservableObject {
         
         let player = Player(name: trimmedName, net: net)
         players.append(player)
-        saveData()
+        savePlayers()
     }
     
     func removePlayer(at offsets: IndexSet) {
         players.remove(atOffsets: offsets)
-        saveData()
+        savePlayers()
     }
     
     func updatePlayer(_ player: Player, name: String, net: Double) {
         if let index = players.firstIndex(where: { $0.id == player.id }) {
             players[index].name = name.trimmingCharacters(in: .whitespaces)
             players[index].net = net
-            saveData()
+            savePlayers()
         }
     }
     
@@ -85,29 +85,29 @@ class GameViewModel: ObservableObject {
             ))
         }
         
-        saveData()
+        saveOverallStats()
     }
     
     func clearGameData() {
         players = []
         transactions = []
-        saveData()
+        savePlayers()
     }
     
     func clearStats() {
         overallStats = []
-        saveData()
+        saveOverallStats()
     }
     
     // MARK: - Data Persistence
     
-    private func saveData() {
-        // Save players
+    private func savePlayers() {
         if let encoded = try? JSONEncoder().encode(players) {
             UserDefaults.standard.set(encoded, forKey: playersKey)
         }
-        
-        // Save overall stats
+    }
+    
+    private func saveOverallStats() {
         if let encoded = try? JSONEncoder().encode(overallStats) {
             UserDefaults.standard.set(encoded, forKey: statsKey)
         }
