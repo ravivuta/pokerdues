@@ -169,7 +169,7 @@ struct PlayerRow: View {
                 TextField("Name", text: $editedName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 
-                TextField("buyIn", text: $editedBuyIn)
+                TextField("+buyIn", text: $editedBuyIn)
                    .textFieldStyle(RoundedBorderTextFieldStyle())
                    .keyboardType(.decimalPad)
                    .frame(width: 75)
@@ -195,10 +195,11 @@ struct PlayerRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(player.name)
                         .font(.headline)
-                    Text("Buy-Ins:"+String(format: "%.2f", player.buyIn))
-                        .font(.footnote)
-                        .foregroundColor(.brown)
+                    
                     HStack{
+                        Text("Buy-Ins:"+String(format: "%.2f", player.buyIn))
+                            .font(.footnote)
+                            .foregroundColor(.brown)
                         Text("NET:" + String(format: "%.2f", player.net))
                             .font(.footnote)
                             .foregroundColor(player.net >= 0 ? .green : .red)
