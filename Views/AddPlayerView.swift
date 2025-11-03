@@ -14,6 +14,8 @@ struct AddPlayerView: View {
     @State private var playerName = ""
     @State private var buyIn: String = ""
     @State private var finalBalance: String = ""
+    @State private var isEditingBuyIn: Bool = false
+    @State private var isEditingFinalBalance: Bool = false
     
     private var calculatedNet: Double? {
         guard let buyInValue = Double(buyIn), let finalBalanceValue = Double(finalBalance) else {
@@ -27,10 +29,22 @@ struct AddPlayerView: View {
             Form {
                 Section(header: Text("Player Information")) {
                     TextField("Player Name", text: $playerName)
-                    TextField("Buy-In", text: $buyIn)
+                    TextField("Buy-In", text: $buyIn, onEditingChanged: { isEditing in
+                        isEditingBuyIn = isEditing
+                        if isEditing {
+                            isEditingFinalBalance = false
+                        }
+                    })
                         .keyboardType(.decimalPad)
-                    TextField("Final Balance", text: $finalBalance)
+                        .disabled(isEditingFinalBalance)
+                    TextField("Final Balance", text: $finalBalance, onEditingChanged: { isEditing in
+                        isEditingFinalBalance = isEditing
+                        if isEditing {
+                            isEditingBuyIn = false
+                        }
+                    })
                         .keyboardType(.decimalPad)
+                        .disabled(isEditingBuyIn)
                     if let net = calculatedNet {
                         HStack {
                             Text("Net")
