@@ -17,12 +17,15 @@ struct AddPlayerView: View {
     @State private var lockedField: LockedField? = nil
     
     private var calculatedNet: Double? {
-        let buyInValue = Double(buyIn) ?? 0
-        let finalBalanceValue = Double(finalBalance) ?? 0
-        if buyInValue == 0 && finalBalanceValue == 0 {
-            return nil
+        guard let inputType = activeInputType else { return nil }
+        switch inputType {
+        case .buyIn:
+            guard let amount = Double(buyIn) else { return nil }
+            return amount
+        case .finalBalance:
+            guard let amount = Double(finalBalance) else { return nil }
+            return -amount
         }
-        return buyInValue - finalBalanceValue
     }
     
     private enum LockedField {
