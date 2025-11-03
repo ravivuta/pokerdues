@@ -41,7 +41,7 @@ class GameViewModel: ObservableObject {
             case .buyIn:
                 players[existingIndex].buyIn += buyIn
             case .finalBalance:
-                players[existingIndex].finalBalance = finalBalance
+                players[existingIndex].finalBalance += finalBalance
             }
             saveData()
             return true
@@ -91,6 +91,21 @@ class GameViewModel: ObservableObject {
         }
 
         return false
+    }
+
+    @discardableResult
+    func applyAmount(to player: Player, amount: Double, inputType: PlayerValueInput) -> Bool {
+        guard let index = players.firstIndex(where: { $0.id == player.id }), amount.isFinite else {
+            return false
+        }
+        switch inputType {
+        case .buyIn:
+            players[index].buyIn += amount
+        case .finalBalance:
+            players[index].finalBalance += amount
+        }
+        saveData()
+        return true
     }
     
     func calculate() {

@@ -159,53 +159,183 @@ struct PlayerRow: View {
     @ObservedObject var viewModel: GameViewModel
     @State private var isEditing = false
     @State private var editedName: String = ""
-    @State private var editedNet: String = ""
+    @State private var editedBuyIn: String = ""
+    @State private var editedFinalBalance: String = ""
+    @State private var activeInput: GameViewModel.PlayerValueInput?
+    @State private var inputAmount: String = ""
     
     var body: some View {
-        HStack {
-            if isEditing {
-                TextField("Name", text: $editedName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                
-                TextField("Net", text: $editedNet)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .keyboardType(.decimalPad)
-                    .frame(width: 100)
-                
-                Button("Save") {
-                    if let net = Double(editedNet) {
-                        viewModel.updatePlayer(player, name: editedName, net: net)
-                        isEditing = false
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                
-                Button("Cancel") {
-                    isEditing = false
-                }
-                .buttonStyle(.bordered)
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(player.name)
                         .font(.headline)
-                    Text(String(format: "%.2f", player.net))
+                    Text("Net: \(formatted(player.net))")
                         .font(.subheadline)
                         .foregroundColor(player.net >= 0 ? .green : .red)
                 }
-                
                 Spacer()
-                
-                Button(action: {
-                    editedName = player.name
-                    editedNet = String(format: "%.2f", player.net)
-                    isEditing = true
-                }) {
-                    Image(systemName: "pencil")
+                Button(action: toggleEditing) {
+                    Image(systemName: isEditing ? "xmark.circle" : "pencil")
                         .foregroundColor(.blue)
+                }
+                .disabled(activeInput != nil)
+            }
+            
+            HStack(spacing: 16) {
+                valueTag(title: "Buy-In", amount: player.buyIn, background: Color.red.opacity(0.15))
+                valueTag(title: "Final", amount: player.finalBalance, background: Color.green.opacity(0.15))
+            }
+            
+            if !isEditing {
+                HStack(spacing: 12) {
+                    Button(action: { startInput(.buyIn) }) {
+                        Label("Add Buy-In", systemImage: "plus.circle")
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button(action: { startInput(.finalBalance) }) {
+                        Label("Add Final", systemImage: "banknote")
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            
+            if let activeInput {
+                HStack(spacing: 8) {
+                    TextField(activeInput == .buyIn ? "Buy-In Amount" : "Final Balance Amount", text: $inputAmount)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 160)
+                    Button("Save") {
+                        saveInput(activeInput)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(Double(inputAmount) == nil)
+                    Button("Cancel") {
+                        cancelInput()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            
+            if isEditing {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Name", text: $editedName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack(spacing: 12) {
+                        TextField("Buy-In", text: $editedBuyIn)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        TextField("Final Balance", text: $editedFinalBalance)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    HStack(spacing: 12) {
+                        Button("Save Changes") {
+                            saveEdits()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(!canSaveEdits)
+                        Button("Cancel") {
+                            cancelEditing()
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+        .onChange(of: player.buyIn) { _ in
+            refreshEditedFieldsIfNeeded()
+        }
+        .onChange(of: player.finalBalance) { _ in
+            refreshEditedFieldsIfNeeded()
+        }
+        .onChange(of: player.name) { _ in
+            refreshEditedFieldsIfNeeded()
+        }
+        .onAppear {
+            syncEditedFields()
+        }
+    }
+    
+    private var canSaveEdits: Bool {
+        guard Double(editedBuyIn) != nil, Double(editedFinalBalance) != nil else { return false }
+        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedName.isEmpty
+    }
+    
+    private func saveEdits() {
+        guard let buyInValue = Double(editedBuyIn),
+              let finalBalanceValue = Double(editedFinalBalance) else { return }
+        let success = viewModel.updatePlayer(player, name: editedName, buyIn: buyInValue, finalBalance: finalBalanceValue)
+        if success {
+            isEditing = false
+        }
+    }
+    
+    private func toggleEditing() {
+        if isEditing {
+            cancelEditing()
+        } else {
+            syncEditedFields()
+            isEditing = true
+        }
+    }
+    
+    private func cancelEditing() {
+        isEditing = false
+        syncEditedFields()
+    }
+    
+    private func startInput(_ type: GameViewModel.PlayerValueInput) {
+        activeInput = type
+        inputAmount = ""
+    }
+    
+    private func saveInput(_ type: GameViewModel.PlayerValueInput) {
+        guard let amount = Double(inputAmount) else { return }
+        if viewModel.applyAmount(to: player, amount: amount, inputType: type) {
+            cancelInput()
+        }
+    }
+    
+    private func cancelInput() {
+        activeInput = nil
+        inputAmount = ""
+    }
+    
+    private func syncEditedFields() {
+        editedName = player.name
+        editedBuyIn = formatted(player.buyIn)
+        editedFinalBalance = formatted(player.finalBalance)
+    }
+
+    private func refreshEditedFieldsIfNeeded() {
+        if !isEditing {
+            syncEditedFields()
+        }
+    }
+    
+    private func formatted(_ value: Double) -> String {
+        String(format: "%.2f", value)
+    }
+    
+    @ViewBuilder
+    private func valueTag(title: String, amount: Double, background: Color) -> some View {
+        HStack(spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text(formatted(amount))
+                .font(.subheadline)
+                .fontWeight(.semibold)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .background(background)
+        .cornerRadius(8)
     }
 }
 
