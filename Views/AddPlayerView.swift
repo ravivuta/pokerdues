@@ -17,15 +17,45 @@ struct AddPlayerView: View {
     @State private var lockedField: LockedField? = nil
     
     private var calculatedNet: Double? {
-        guard let buyInValue = Double(buyIn), let finalBalanceValue = Double(finalBalance) else {
+        let buyInValue = Double(buyIn) ?? 0
+        let finalBalanceValue = Double(finalBalance) ?? 0
+        if buyInValue == 0 && finalBalanceValue == 0 {
             return nil
         }
-        return finalBalanceValue - buyInValue
+        return buyInValue - finalBalanceValue
     }
     
     private enum LockedField {
         case buyIn
         case finalBalance
+    }
+    
+    private var activeInputType: GameViewModel.PlayerValueInput? {
+        switch lockedField {
+        case .finalBalance:
+            return .buyIn
+        case .buyIn:
+            return .finalBalance
+        case .none:
+            if !buyIn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return .buyIn
+            }
+            if !finalBalance.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return .finalBalance
+            }
+            return nil
+        }
+    }
+    
+    private var isAddDisabled: Bool {
+        let trimmedName = playerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let inputType = activeInputType else { return true }
+        switch inputType {
+        case .buyIn:
+            return Double(buyIn) == nil
+        case .finalBalance:
+            return Double(finalBalance) == nil
+        }
     }
     
     var body: some View {
@@ -73,14 +103,21 @@ struct AddPlayerView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Add") {
-                        guard let buyInValue = Double(buyIn),
-                              let finalBalanceValue = Double(finalBalance) else { return }
-                        let didAdd = viewModel.addPlayer(name: playerName, buyIn: buyInValue, finalBalance: finalBalanceValue)
+                        guard let inputType = activeInputType else { return }
+                        let didAdd: Bool
+                        switch inputType {
+                        case .buyIn:
+                            guard let buyInValue = Double(buyIn) else { return }
+                            didAdd = viewModel.addPlayer(name: playerName, buyIn: buyInValue, finalBalance: 0, inputType: .buyIn)
+                        case .finalBalance:
+                            guard let finalBalanceValue = Double(finalBalance) else { return }
+                            didAdd = viewModel.addPlayer(name: playerName, buyIn: 0, finalBalance: finalBalanceValue, inputType: .finalBalance)
+                        }
                         if didAdd {
                             dismiss()
                         }
                     }
-                    .disabled(playerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || Double(buyIn) == nil || Double(finalBalance) == nil)
+                    .disabled(isAddDisabled)
                 }
             }
         }
