@@ -7,8 +7,13 @@
 
 import Foundation
 import SwiftUI
+import Combine
 
 class GameViewModel: ObservableObject {
+    enum PlayerValueInput {
+        case buyIn
+        case finalBalance
+    }
     @Published var players: [Player] = []
     @Published var transactions: [Transaction] = []
     @Published var errorMessage: String?
@@ -22,13 +27,40 @@ class GameViewModel: ObservableObject {
         loadData()
     }
     
-    func addPlayer(name: String, net: Double) {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        guard !trimmedName.isEmpty else { return }
+    @discardableResult
+    func addPlayer(name: String, buyIn: Double, finalBalance: Double, inputType: PlayerValueInput? = nil) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return false }
         
-        let player = Player(name: trimmedName, net: net)
+        if let existingIndex = players.firstIndex(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            guard let inputType = inputType else {
+                presentError("Player names must be unique.")
+                return false
+            }
+            switch inputType {
+            case .buyIn:
+                players[existingIndex].buyIn += buyIn
+            case .finalBalance:
+                players[existingIndex].finalBalance = finalBalance
+            }
+            saveData()
+            return true
+        }
+        
+        let player: Player
+        if let inputType = inputType {
+            switch inputType {
+            case .buyIn:
+                player = Player(name: trimmedName, buyIn: buyIn, finalBalance: 0)
+            case .finalBalance:
+                player = Player(name: trimmedName, buyIn: 0, finalBalance: finalBalance)
+            }
+        } else {
+            player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance)
+        }
         players.append(player)
         saveData()
+        return true
     }
     
     func removePlayer(at offsets: IndexSet) {
@@ -36,12 +68,29 @@ class GameViewModel: ObservableObject {
         saveData()
     }
     
-    func updatePlayer(_ player: Player, name: String, net: Double) {
-        if let index = players.firstIndex(where: { $0.id == player.id }) {
-            players[index].name = name.trimmingCharacters(in: .whitespaces)
-            players[index].net = net
-            saveData()
+    @discardableResult
+    func updatePlayer(_ player: Player, name: String, buyIn: Double, finalBalance: Double) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return false }
+        
+        let duplicateExists = players.contains {
+            $0.id != player.id && $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
         }
+        
+        guard !duplicateExists else {
+            presentError("Player names must be unique.")
+            return false
+        }
+        
+        if let index = players.firstIndex(where: { $0.id == player.id }) {
+            players[index].name = trimmedName
+            players[index].buyIn = buyIn
+            players[index].finalBalance = finalBalance
+            saveData()
+            return true
+        }
+
+        return false
     }
     
     func calculate() {
@@ -86,6 +135,11 @@ class GameViewModel: ObservableObject {
         }
         
         saveData()
+    }
+    
+    private func presentError(_ message: String) {
+        errorMessage = message
+        showError = true
     }
     
     func clearGameData() {
