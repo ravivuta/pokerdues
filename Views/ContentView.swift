@@ -100,7 +100,7 @@ struct ContentView: View {
                     Button(action: {
                         viewModel.calculate()
                     }) {
-                        Label("Calculate", systemImage: "calculator")
+                        Label("Settle", systemImage: "Play.fill")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(viewModel.players.isEmpty ? Color.gray : Color.green)
@@ -124,7 +124,7 @@ struct ContentView: View {
                 .padding()
                 .background(Color(UIColor.systemBackground))
             }
-            .navigationTitle("Poker Dues")
+            .navigationTitle("Player Transactions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -160,21 +160,28 @@ struct PlayerRow: View {
     @State private var isEditing = false
     @State private var editedName: String = ""
     @State private var editedNet: String = ""
-    
+    @State private var editedBuyIn: String = ""
+    @State private var editedFinalBalance: String = ""
+   
     var body: some View {
         HStack {
             if isEditing {
                 TextField("Name", text: $editedName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 
-                TextField("Net", text: $editedNet)
+                TextField("buyIn", text: $editedBuyIn)
+                   .textFieldStyle(RoundedBorderTextFieldStyle())
+                   .keyboardType(.decimalPad)
+                   .frame(width: 75)
+                
+                TextField("finalBalance", text: $editedFinalBalance)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.decimalPad)
-                    .frame(width: 100)
+                    .frame(width: 75)
                 
                 Button("Save") {
-                    if let net = Double(editedNet) {
-                        viewModel.updatePlayer(player, name: editedName, net: net)
+                    if let buyIn = Double(editedBuyIn), let finalBalance = Double(editedFinalBalance){
+                        viewModel.updatePlayer(player, name: editedName, buyIn: buyIn, finalBalance: finalBalance, net: 0)
                         isEditing = false
                     }
                 }
@@ -188,16 +195,25 @@ struct PlayerRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(player.name)
                         .font(.headline)
-                    Text(String(format: "%.2f", player.net))
-                        .font(.subheadline)
-                        .foregroundColor(player.net >= 0 ? .green : .red)
+                    Text("Buy-Ins:"+String(format: "%.2f", player.buyIn))
+                        .font(.footnote)
+                        .foregroundColor(.brown)
+                    HStack{
+                        Text("NET:" + String(format: "%.2f", player.net))
+                            .font(.footnote)
+                            .foregroundColor(player.net >= 0 ? .green : .red)
+                        Text("Ending Balance:" + String(format: "%.2f", player.finalBalance))
+                            .font(.footnote)
+                            .foregroundColor(.brown)
+                    }
                 }
                 
                 Spacer()
                 
                 Button(action: {
                     editedName = player.name
-                    editedNet = String(format: "%.2f", player.net)
+                    editedBuyIn = String(format: "%.2f","")
+                    editedFinalBalance = String(format: "%.2f","")
                     isEditing = true
                 }) {
                     Image(systemName: "pencil")

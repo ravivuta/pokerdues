@@ -26,7 +26,7 @@ class SettlementCalculator {
         
         // Create mutable copies of players with their net amounts
         var playerNames = validPlayers.map { $0.name }
-        var netAmounts = validPlayers.map { $0.net }
+        var netAmounts = validPlayers.map { $0.net } //+ validPlayers.map{ $0.finalBalance}
         
         var transactions: [Transaction] = []
         let rows = validPlayers.count

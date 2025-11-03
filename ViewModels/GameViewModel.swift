@@ -34,8 +34,8 @@ class GameViewModel: ObservableObject {
         
         if let existingIndex = players.firstIndex(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
             guard let inputType = inputType else {
-                presentError("Player names must be unique.")
-                return false
+               // presentError("Player names must be unique.")
+               return false
             }
             switch inputType {
             case .buyIn:
@@ -43,7 +43,9 @@ class GameViewModel: ObservableObject {
             case .finalBalance:
                 players[existingIndex].finalBalance = finalBalance
             }
+            players[existingIndex].net =  players[existingIndex].finalBalance - players[existingIndex].buyIn
             saveData()
+            
             return true
         }
         
@@ -51,12 +53,12 @@ class GameViewModel: ObservableObject {
         if let inputType = inputType {
             switch inputType {
             case .buyIn:
-                player = Player(name: trimmedName, buyIn: buyIn, finalBalance: 0)
+                player = Player(name: trimmedName, buyIn: buyIn, finalBalance: 0, net: -buyIn)
             case .finalBalance:
-                player = Player(name: trimmedName, buyIn: 0, finalBalance: finalBalance)
+                player = Player(name: trimmedName, buyIn: 0, finalBalance: finalBalance, net: finalBalance)
             }
         } else {
-            player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance)
+            player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance, net: -buyIn)
         }
         players.append(player)
         saveData()
@@ -69,24 +71,23 @@ class GameViewModel: ObservableObject {
     }
     
     @discardableResult
-    func updatePlayer(_ player: Player, name: String, buyIn: Double, finalBalance: Double) -> Bool {
+    func updatePlayer(_ player: Player, name: String, buyIn: Double, finalBalance: Double, net: Double) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return false }
         
-        let duplicateExists = players.contains {
-            $0.id != player.id && $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
+        let exists = players.contains {
+            $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
         }
-        
-        guard !duplicateExists else {
-            presentError("Player names must be unique.")
+        if !exists{
             return false
         }
-        
-        if let index = players.firstIndex(where: { $0.id == player.id }) {
+        if let index = players.firstIndex(where: {$0.name.caseInsensitiveCompare(trimmedName) == .orderedSame}) {
             players[index].name = trimmedName
-            players[index].buyIn = buyIn
+            players[index].buyIn += buyIn
             players[index].finalBalance = finalBalance
+            players[index].net = finalBalance - players[index].buyIn
             saveData()
+            
             return true
         }
 

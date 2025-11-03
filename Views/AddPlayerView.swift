@@ -66,20 +66,20 @@ struct AddPlayerView: View {
             Form {
                 Section(header: Text("Player Information")) {
                     TextField("Player Name", text: $playerName)
-                    TextField("Buy-In", text: $buyIn, onEditingChanged: { isEditing in
+                    TextField("+Buy-In", text: $buyIn, onEditingChanged: { isEditing in
                         if isEditing && lockedField == nil {
                             lockedField = .finalBalance
                         }
                     })
                         .keyboardType(.decimalPad)
                         .disabled(lockedField == .buyIn)
-                    TextField("Final Balance", text: $finalBalance, onEditingChanged: { isEditing in
-                        if isEditing && lockedField == nil {
-                            lockedField = .buyIn
-                        }
-                    })
-                        .keyboardType(.decimalPad)
-                        .disabled(lockedField == .finalBalance)
+                    //TextField("Ending Balance", text: $finalBalance, onEditingChanged: { isEditing in
+                    //    if isEditing && lockedField == nil {
+                    //        lockedField = .buyIn
+                    //    }
+                    //})
+                     //   .keyboardType(.decimalPad)
+                     //   .disabled(lockedField == .finalBalance)
                     if let net = calculatedNet {
                         HStack {
                             Text("Net")
@@ -91,12 +91,12 @@ struct AddPlayerView: View {
                 }
                 
                 Section(header: Text("Note")) {
-                    Text("Positive = owed money\nNegative = owes money")
+                    Text("Enter positive numbers only")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
             }
-            .navigationTitle("Add Player")
+            .navigationTitle("Add")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
