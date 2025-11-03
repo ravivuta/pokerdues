@@ -9,6 +9,10 @@ import Foundation
 import SwiftUI
 
 class GameViewModel: ObservableObject {
+    enum PlayerValueInput {
+        case buyIn
+        case finalBalance
+    }
     @Published var players: [Player] = []
     @Published var transactions: [Transaction] = []
     @Published var errorMessage: String?
@@ -23,16 +27,36 @@ class GameViewModel: ObservableObject {
     }
     
     @discardableResult
-    func addPlayer(name: String, buyIn: Double, finalBalance: Double) -> Bool {
+    func addPlayer(name: String, buyIn: Double, finalBalance: Double, inputType: PlayerValueInput? = nil) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return false }
         
-        guard !players.contains(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) else {
-            presentError("Player names must be unique.")
-            return false
+        if let existingIndex = players.firstIndex(where: { $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame }) {
+            guard let inputType = inputType else {
+                presentError("Player names must be unique.")
+                return false
+            }
+            switch inputType {
+            case .buyIn:
+                players[existingIndex].finalBalance += buyIn
+            case .finalBalance:
+                players[existingIndex].buyIn += finalBalance
+            }
+            saveData()
+            return true
         }
         
-        let player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance)
+        let player: Player
+        if let inputType = inputType {
+            switch inputType {
+            case .buyIn:
+                player = Player(name: trimmedName, buyIn: 0, finalBalance: buyIn)
+            case .finalBalance:
+                player = Player(name: trimmedName, buyIn: finalBalance, finalBalance: 0)
+            }
+        } else {
+            player = Player(name: trimmedName, buyIn: buyIn, finalBalance: finalBalance)
+        }
         players.append(player)
         saveData()
         return true
