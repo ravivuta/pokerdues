@@ -14,8 +14,7 @@ struct AddPlayerView: View {
     @State private var playerName = ""
     @State private var buyIn: String = ""
     @State private var finalBalance: String = ""
-    @State private var isEditingBuyIn: Bool = false
-    @State private var isEditingFinalBalance: Bool = false
+    @State private var lockedField: LockedField? = nil
     
     private var calculatedNet: Double? {
         guard let buyInValue = Double(buyIn), let finalBalanceValue = Double(finalBalance) else {
@@ -24,27 +23,30 @@ struct AddPlayerView: View {
         return finalBalanceValue - buyInValue
     }
     
+    private enum LockedField {
+        case buyIn
+        case finalBalance
+    }
+    
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Player Information")) {
                     TextField("Player Name", text: $playerName)
                     TextField("Buy-In", text: $buyIn, onEditingChanged: { isEditing in
-                        isEditingBuyIn = isEditing
-                        if isEditing {
-                            isEditingFinalBalance = false
+                        if isEditing && lockedField == nil {
+                            lockedField = .finalBalance
                         }
                     })
                         .keyboardType(.decimalPad)
-                        .disabled(isEditingFinalBalance)
+                        .disabled(lockedField == .buyIn)
                     TextField("Final Balance", text: $finalBalance, onEditingChanged: { isEditing in
-                        isEditingFinalBalance = isEditing
-                        if isEditing {
-                            isEditingBuyIn = false
+                        if isEditing && lockedField == nil {
+                            lockedField = .buyIn
                         }
                     })
                         .keyboardType(.decimalPad)
-                        .disabled(isEditingBuyIn)
+                        .disabled(lockedField == .finalBalance)
                     if let net = calculatedNet {
                         HStack {
                             Text("Net")
