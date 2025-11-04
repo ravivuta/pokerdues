@@ -162,6 +162,7 @@ struct PlayerRow: View {
     @State private var editedNet: String = ""
     @State private var editedBuyIn: String = ""
     @State private var editedFinalBalance: String = ""
+    @State private var showingHistory = false
    
     var body: some View {
         HStack {
@@ -211,18 +212,30 @@ struct PlayerRow: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    editedName = player.name
-                    editedBuyIn = String(format: "%.2f","")
-                    editedFinalBalance = String(format: "%.2f","")
-                    isEditing = true
-                }) {
-                    Image(systemName: "pencil")
-                        .foregroundColor(.blue)
+                HStack(spacing: 12) {
+                    Button(action: {
+                        showingHistory = true
+                    }) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .foregroundColor(.purple)
+                    }
+                    
+                    Button(action: {
+                        editedName = player.name
+                        editedBuyIn = ""
+                        editedFinalBalance = ""
+                        isEditing = true
+                    }) {
+                        Image(systemName: "pencil")
+                            .foregroundColor(.blue)
+                    }
                 }
             }
         }
         .padding(.vertical, 4)
+        .sheet(isPresented: $showingHistory) {
+            PlayerHistoryView(viewModel: viewModel, playerID: player.id)
+        }
     }
 }
 
