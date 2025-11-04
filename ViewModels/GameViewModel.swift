@@ -126,6 +126,7 @@ class GameViewModel: ObservableObject {
         }
         
         transactions = calculatedTransactions
+        recordTransactionHistory(for: calculatedTransactions)
         
         // Add to overall stats (matching original behavior: [date, playerName, netAmount])
         for player in validPlayers {
@@ -179,6 +180,32 @@ class GameViewModel: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: statsKey),
            let decoded = try? JSONDecoder().decode([PlayerStat].self, from: data) {
             overallStats = decoded
+        }
+    }
+
+    private func recordTransactionHistory(for newTransactions: [Transaction]) {
+        guard !newTransactions.isEmpty else { return }
+        for transaction in newTransactions {
+            if let payerIndex = players.firstIndex(where: { $0.name.caseInsensitiveCompare(transaction.payFrom) == .orderedSame }) {
+                let entry = PlayerTransaction(
+                    transactionId: transaction.id,
+                    counterpartName: transaction.payTo,
+                    amount: transaction.amount,
+                    role: .paid,
+                    date: transaction.date
+                )
+                players[payerIndex].transactionHistory.append(entry)
+            }
+            if let receiverIndex = players.firstIndex(where: { $0.name.caseInsensitiveCompare(transaction.payTo) == .orderedSame }) {
+                let entry = PlayerTransaction(
+                    transactionId: transaction.id,
+                    counterpartName: transaction.payFrom,
+                    amount: transaction.amount,
+                    role: .received,
+                    date: transaction.date
+                )
+                players[receiverIndex].transactionHistory.append(entry)
+            }
         }
     }
 }
