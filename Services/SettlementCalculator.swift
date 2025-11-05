@@ -10,9 +10,11 @@ import Foundation
 class SettlementCalculator {
     
     /// Calculates settlement transactions to balance all players
-    /// - Parameter players: Array of players with their net amounts (positive = owed money, negative = owes money)
+    /// - Parameters:
+    ///   - players: Array of players with their net amounts (positive = owed money, negative = owes money)
+    ///   - gameId: The game ID to associate transactions with
     /// - Returns: Array of transactions needed to settle all debts, or nil if grand total is not zero
-    static func calculate(players: [Player]) -> [Transaction]? {
+    static func calculate(players: [Player], gameId: UUID) -> [Transaction]? {
         // Filter out blank players
         let validPlayers = players.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty }
         
@@ -49,6 +51,7 @@ class SettlementCalculator {
                         netAmounts[i] = 0
                         
                         transactions.append(Transaction(
+                            gameId: gameId,
                             payFrom: payFrom,
                             payTo: payTo,
                             amount: amount
@@ -63,6 +66,7 @@ class SettlementCalculator {
                         netAmounts[j] = 0
                         
                         transactions.append(Transaction(
+                            gameId: gameId,
                             payFrom: payFrom,
                             payTo: payTo,
                             amount: amount

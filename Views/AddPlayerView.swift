@@ -15,6 +15,13 @@ struct AddPlayerView: View {
     @State private var buyIn: String = ""
     @State private var finalBalance: String = ""
     @State private var lockedField: LockedField? = nil
+    @FocusState private var focusedField: Field?
+    
+    private enum Field {
+        case playerName
+        case buyIn
+        case finalBalance
+    }
     
     private var calculatedNet: Double? {
         guard let inputType = activeInputType else { return nil }
@@ -66,6 +73,7 @@ struct AddPlayerView: View {
             Form {
                 Section(header: Text("Player Information")) {
                     TextField("Player Name", text: $playerName)
+                        .focused($focusedField, equals: .playerName)
                     TextField("+Buy-In", text: $buyIn, onEditingChanged: { isEditing in
                         if isEditing && lockedField == nil {
                             lockedField = .finalBalance
@@ -73,6 +81,7 @@ struct AddPlayerView: View {
                     })
                         .keyboardType(.decimalPad)
                         .disabled(lockedField == .buyIn)
+                        .focused($focusedField, equals: .buyIn)
                     //TextField("Ending Balance", text: $finalBalance, onEditingChanged: { isEditing in
                     //    if isEditing && lockedField == nil {
                     //        lockedField = .buyIn
@@ -98,6 +107,12 @@ struct AddPlayerView: View {
             }
             .navigationTitle("Add")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // Focus on player name field when view appears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    focusedField = .playerName
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {

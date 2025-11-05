@@ -9,6 +9,7 @@ import Foundation
 
 struct Player: Identifiable, Codable {
     let id: UUID
+    let gameId: UUID
     var name: String
     var net: Double
     var buyIn: Double
@@ -17,6 +18,7 @@ struct Player: Identifiable, Codable {
     
     init(
         id: UUID = UUID(),
+        gameId: UUID,
         name: String,
         buyIn: Double,
         finalBalance: Double,
@@ -24,6 +26,7 @@ struct Player: Identifiable, Codable {
         transactionHistory: [PlayerTransaction] = []
     ) {
         self.id = id
+        self.gameId = gameId
         self.name = name
         self.net = net
         self.buyIn = buyIn

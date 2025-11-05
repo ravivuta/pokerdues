@@ -9,13 +9,15 @@ import Foundation
 
 struct Transaction: Identifiable, Codable {
     let id: UUID
+    let gameId: UUID
     let payFrom: String
     let payTo: String
     let amount: Double
     let date: Date
     
-    init(id: UUID = UUID(), payFrom: String, payTo: String, amount: Double, date: Date = Date()) {
+    init(id: UUID = UUID(), gameId: UUID, payFrom: String, payTo: String, amount: Double, date: Date = Date()) {
         self.id = id
+        self.gameId = gameId
         self.payFrom = payFrom
         self.payTo = payTo
         self.amount = amount

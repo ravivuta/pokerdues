@@ -34,10 +34,10 @@ struct PlayerHistoryView: View {
                         Image(systemName: "clock.arrow.circlepath")
                             .font(.system(size: 48))
                             .foregroundColor(.gray.opacity(0.5))
-                        Text("No transactions yet")
+                        Text("No buy-ins yet")
                             .font(.headline)
                             .foregroundColor(.gray)
-                        Text("Run a settlement to record player transactions.")
+                        Text("Buy-in history will appear here when you add or update player buy-ins.")
                             .font(.subheadline)
                             .foregroundColor(.gray.opacity(0.7))
                             .multilineTextAlignment(.center)
@@ -49,16 +49,21 @@ struct PlayerHistoryView: View {
                     List(history) { entry in
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
-                                Text(description(for: entry))
+                                Text("Buy-In")
                                     .font(.headline)
                                 Spacer()
-                                Text(amountText(for: entry))
+                                Text(String(format: "+%.2f", entry.buyIn))
                                     .font(.headline)
-                                    .foregroundColor(entry.role == .received ? .green : .red)
+                                    .foregroundColor(.brown)
                             }
                             Text(entry.date, format: .dateTime.day().month().year().hour().minute())
                                 .font(.caption)
                                 .foregroundColor(.gray)
+                            if let note = entry.note, !note.isEmpty {
+                                Text(note)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                         }
                         .padding(.vertical, 4)
                     }
@@ -77,18 +82,5 @@ struct PlayerHistoryView: View {
         }
     }
     
-    private func description(for entry: PlayerTransaction) -> String {
-        switch entry.role {
-        case .paid:
-            return "Paid \(entry.counterpartName)"
-        case .received:
-            return "Received from \(entry.counterpartName)"
-        }
-    }
-    
-    private func amountText(for entry: PlayerTransaction) -> String {
-        let amount = entry.role == .paid ? -entry.amount : entry.amount
-        return String(format: "%.2f", amount)
-    }
 }
 
